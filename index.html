@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>VYBZ - Feel The Frequency</title>
+  
+  <!-- Apple Full-Screen Web App Setup -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VYBZ">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      the
+        extend: {
+          colors: {
+            vybzBlack: '#080A0C',
+            vybzSurface: '#12161A',
+            vybzGreen: '#00FF66',
+            vybzGreenDim: '#00CC52',
+            vybzBorder: '#1F262E'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, ReactDOM & Babel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100dvh;
+      width: 100vw;
+      background-color: #080A0C;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .snap-feed-container {
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .snap-feed-item {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes vinyl-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-slow {
+      animation: vinyl-spin 4s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Tested vertical video streams optimized for iOS Safari
+    const INITIAL_VIDEOS = [
+      {
+        id: "v1",
+        video_url: "https://assets.mixkit.co/videos/preview/mixkit-young-woman-skater-performing-a-trick-in-a-skatepark-42994-large.mp4",
+        caption: "Late night session at the bowl! Energy unmatched 🔥🛹 #skate #accra #vybz",
+        tags: ["skate", "accra", "vybz"],
+        music_title: "Original Sound - Kofi Skates",
+        username: "kofi_skates",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        likes: 2430,
+        commentsCount: 142,
+        shares: 88
+      },
+      {
+        id: "v2",
+        video_url: "https://assets.mixkit.co/videos/preview/mixkit-girl-dancing-happy-in-the-street-41235-large.mp4",
+        caption: "New dance challenge! Drop your duets now ⚡💃 #afrobeats #dancechallenge",
+        tags: ["afrobeats", "dancechallenge"],
+        music_title: "City Boys Beat - VYBZ Audio",
+        username: "zara_moves",
+        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
+        likes: 8910,
+        commentsCount: 520,
+        shares: 610
+      },
+      {
+        id: "v3",
+        video_url: "https://assets.mixkit.co/videos/preview/mixkit-futuristic-robot-dancing-under-neon-lights-42407-large.mp4",
+        caption: "Cyberpunk visual loops rendered in neon green 🟢🤖 #cyber #neon #3d",
+        tags: ["cyber", "neon", "3d"],
+        music_title: "Synthwave Pulse 128BPM",
+        username: "neon_lab",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+        likes: 1240,
+        commentsCount: 88,
+        shares: 32
+      }
+    ];
+
+    function App() {
+      const [showSplash, setShowSplash] = useState(true);
+      const [activeTab, setActiveTab] = useState('feed');
+      const [feedFilter, setFeedFilter] = useState('foryou');
+      const [videos, setVideos] = useState(INITIAL_VIDEOS);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [activeCommentsVideo, setActiveCommentsVideo] = useState(null);
+      const [isUploadOpen, setIsUploadOpen] = useState(false);
+      const [user] = useState({
+        username: "vybz_star",
+        name: "VYBZ Explorer",
+        bio: "Feeling the frequency ⚡",
+        followers: "1.4K",
+        following: 280,
+        likes: "19.2K",
+        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200"
+      });
+
+      useEffect(() => {
+        const timer = setTimeout(() => setShowSplash(false), 1600);
+        return () => clearTimeout(timer);
+      }, []);
+
+      const handleScroll = (e) => {
+        const height = e.target.clientHeight;
+        const index = Math.round(e.target.scrollTop / height);
+        if (index !== currentIndex && index < videos.length) {
+          setCurrentIndex(index);
+        }
+      };
+
+      const handleAddNewVideo = (newVideo) => {
+        setVideos([newVideo, ...videos]);
+        setActiveTab('feed');
+        setCurrentIndex(0);
+      };
+
+      return (
+        <div className="w-full h-full bg-black flex justify-center items-center">
+          <div className="relative w-full h-[100dvh] max-w-md bg-vybzBlack flex flex-col overflow-hidden shadow-2xl">
+            {showSplash ? (
+              <SplashScreen />
+            ) : (
+              <>
+                {activeTab === 'feed' && (
+                  <div className="relative w-full h-full overflow-hidden">
+                    <div className="absolute top-6 left-0 right-0 z-30 flex items-center justify-center gap-6 text-sm font-bold drop-shadow-md">
+                      <button
+                        onClick={() => setFeedFilter('following')}
+                        className={`transition-all ${feedFilter === 'following' ? 'text-white border-b-2 border-vybzGreen pb-1' : 'text-zinc-400'}`}
+                      >
+                        Following
+                      </button>
+                      <span className="text-zinc-600">|</span>
+                      <button
+                        onClick={() => setFeedFilter('foryou')}
+                        className={`transition-all ${feedFilter === 'foryou' ? 'text-white border-b-2 border-vybzGreen pb-1' : 'text-zinc-400'}`}
+                      >
+                        For You
+                      </button>
+                    </div>
+
+                    <div
+                      onScroll={handleScroll}
+                      className="w-full h-full overflow-y-scroll snap-feed-container no-scrollbar pb-16"
+                    >
+                      {videos.map((vid, idx) => (
+                        <div key={vid.id} className="w-full h-[100dvh] snap-feed-item relative">
+                          <VideoPlayer
+                            video={vid}
+                            isActive={idx === currentIndex && activeTab === 'feed'}
+                            onOpenComments={() => setActiveCommentsVideo(vid)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'search' && <SearchView />}
+                {activeTab === 'activity' && <ActivityView />}
+                {activeTab === 'profile' && <ProfileView user={user} />}
+
+                <BottomBar
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onOpenUpload={() => setIsUploadOpen(true)}
+                />
+
+                {activeCommentsVideo && (
+                  <CommentsSheet
+                    video={activeCommentsVideo}
+                    onClose={() => setActiveCommentsVideo(null)}
+                  />
+                )}
+
+                {isUploadOpen && (
+                  <UploadModal
+                    onClose={() => setIsUploadOpen(false)}
+                    onUploaded={handleAddNewVideo}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function VideoPlayer({ video, isActive, onOpenComments }) {
+      const videoRef = useRef(null);
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [isMuted, setIsMuted] = useState(true);
+      const [liked, setLiked] = useState(false);
+      const [likeCount, setLikeCount] = useState(video.likes);
+      const [showHeartBurst, setShowHeartBurst] = useState(false);
+      const lastTapRef = useRef(0);
+
+      useEffect(() => {
+        if (!videoRef.current) return;
+        if (isActive) {
+          videoRef.current.currentTime = 0;
+          const p = videoRef.current.play();
+          if (p !== undefined) {
+            p.then(() => setIsPlaying(true)).catch(() => {
+              setIsMuted(true);
+              videoRef.current?.play().then(() => setIsPlaying(true)).catch(() => {});
+            });
+          }
+        } else {
+          videoRef.current.pause();
+          setIsPlaying(false);
+        }
+      }, [isActive]);
+
+      const handleTap = () => {
+        const now = Date.now();
+        if (now - lastTapRef.current < 320) {
+          if (!liked) {
+            setLiked(true);
+            setLikeCount(prev => prev + 1);
+          }
+          setShowHeartBurst(true);
+          setTimeout(() => setShowHeartBurst(false), 800);
+        } else {
+          if (videoRef.current) {
+            if (isPlaying) {
+              videoRef.current.pause();
+              setIsPlaying(false);
+            } else {
+              videoRef.current.play();
+              setIsPlaying(true);
+            }
+          }
+        }
+        lastTapRef.current = now;
+      };
+
+      const toggleLike = () => {
+        if (!liked) {
+          setLiked(true);
+          setLikeCount(prev => prev + 1);
+        } else {
+          setLiked(false);
+          setLikeCount(prev => prev - 1);
+        }
+      };
+
+      const handleShare = async () => {
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: `VYBZ Video by @${video.username}`,
+              text: video.caption,
+              url: window.location.href
+            });
+          } catch(e) {}
+        } else {
+          navigator.clipboard.writeText(window.location.href);
+          alert("Link copied to clipboard!");
+        }
+      };
+
+      return (
+        <div className="relative w-full h-full bg-black select-none overflow-hidden flex items-center justify-center">
+          <video
+            ref={videoRef}
+            src={video.video_url}
+            playsInline
+            webkit-playsinline="true"
+            loop
+            muted={isMuted}
+            onClick={handleTap}
+            className="w-full h-full object-cover"
+          />
+
+          {showHeartBurst && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+              <div className="text-vybzGreen text-8xl animate-ping">💚</div>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="absolute top-16 right-4 z-20 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-xs font-semibold flex items-center gap-1"
+          >
+            {isMuted ? "🔇 Muted" : "🔊 Sound On"}
+          </button>
+
+          <div className="absolute right-3 bottom-24 flex flex-col items-center gap-5 z-20">
+            <div className="relative">
+              <img
+                src={video.avatar}
+                alt={video.username}
+                className="w-11 h-11 rounded-full border-2 border-vybzGreen object-cover shadow-lg"
+              />
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-vybzGreen text-black rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center">
+                +
+              </div>
+            </div>
+
+            <button onClick={toggleLike} className="flex flex-col items-center">
+              <div className={`p-2.5 rounded-full bg-black/40 backdrop-blur-md text-2xl transition active:scale-75 ${liked ? 'text-vybzGreen' : 'text-white'}`}>
+                {liked ? '💚' : '🤍'}
+              </div>
+              <span className="text-[11px] font-bold text-white mt-1">{likeCount}</span>
+            </button>
+
+            <button onClick={onOpenComments} className="flex flex-col items-center">
+              <div className="p-2.5 rounded-full bg-black/40 backdrop-blur-md text-xl active:scale-75 transition">
+                💬
+              </div>
+              <span className="text-[11px] font-bold text-white mt-1">{video.commentsCount}</span>
+            </button>
+
+            <button onClick={handleShare} className="flex flex-col items-center">
+              <div className="p-2.5 rounded-full bg-black/40 backdrop-blur-md text-xl active:scale-75 transition">
+                ↗️
+              </div>
+              <span className="text-[11px] font-bold text-white mt-1">{video.shares}</span>
+            </button>
+
+            <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-900 flex items-center justify-center spin-slow shadow-xl">
+              <div className="w-4 h-4 rounded-full bg-vybzGreen border-2 border-black" />
+            </div>
+          </div>
+
+          <div className="absolute left-4 bottom-20 right-20 z-20 pointer-events-none text-left">
+            <h3 className="font-extrabold text-white text-sm flex items-center gap-1.5 drop-shadow">
+              @{video.username}
+              <span className="w-2 h-2 rounded-full bg-vybzGreen inline-block" />
+            </h3>
+            <p className="text-xs text-zinc-200 mt-1 line-clamp-2 drop-shadow leading-relaxed">
+              {video.caption}
+            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] text-vybzGreen font-medium">
+              <span>🎵</span>
+              <span className="truncate max-w-[200px] text-zinc-300">{video.music_title}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function CommentsSheet({ video, onClose }) {
+      const [commentText, setCommentText] = useState("");
+      const [comments, setComments] = useState([
+        { id: 1, user: "kwame_flow", text: "This energy is unreal! 🇬🇭🔥", time: "2h ago" },
+        { id: 2, user: "ama_vibez", text: "Need the full song title on VYBZ right now!", time: "1h ago" }
+      ]);
+
+      const handleAddComment = (e) => {
+        e.preventDefault();
+        if (!commentText.trim()) return;
+        setComments([{ id: Date.now(), user: "you", text: commentText.trim(), time: "Just now" }, ...comments]);
+        setCommentText("");
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end">
+          <div className="w-full bg-vybzSurface rounded-t-3xl border-t border-vybzBorder h-[65vh] flex flex-col">
+            <div className="p-4 border-b border-vybzBorder flex items-center justify-between">
+              <span className="w-6" />
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">{comments.length} Comments</h3>
+              <button onClick={onClose} className="text-zinc-400 font-bold p-1">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-left">
+              {comments.map(c => (
+                <div key={c.id} className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-full bg-vybzGreen/20 text-vybzGreen font-bold flex items-center justify-center text-xs">
+                    {c.user[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-zinc-300">@{c.user}</span>
+                      <span className="text-[10px] text-zinc-500">{c.time}</span>
+                    </div>
+                    <p className="text-xs text-zinc-200 mt-0.5">{c.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <form onSubmit={handleAddComment} className="p-3 bg-vybzBlack border-t border-vybzBorder flex gap-2">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Drop a comment..."
+                className="flex-1 bg-vybzSurface border border-zinc-800 text-white rounded-full px-4 py-2 text-xs outline-none focus:border-vybzGreen"
+              />
+              <button
+                type="submit"
+                disabled={!commentText.trim()}
+                className="px-4 py-2 bg-vybzGreen text-black font-bold text-xs rounded-full disabled:opacity-40"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function UploadModal({ onClose, onUploaded }) {
+      const [file, setFile] = useState(null);
+      const [caption, setCaption] = useState("");
+      const fileInputRef = useRef(null);
+
+      const handleFileChange = (e) => {
+        const picked = e.target.files[0];
+        if (picked) setFile(picked);
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!file) return;
+
+        const videoBlobUrl = URL.createObjectURL(file);
+        const newClip = {
+          id: `upload_${Date.now()}`,
+          video_url: videoBlobUrl,
+          caption: caption.trim() || "New drop on VYBZ ⚡",
+          tags: ["vybz", "fresh"],
+          music_title: "Original Audio - you",
+          username: "vybz_star",
+          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200",
+          likes: 1,
+          commentsCount: 0,
+          shares: 0
+        };
+
+        onUploaded(newClip);
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-vybzSurface border border-vybzBorder rounded-3xl p-5 relative text-left">
+            <button onClick={onClose} className="absolute top-4 right-4 text-zinc-400 font-bold">✕</button>
+            <h2 className="text-base font-extrabold text-white mb-1">Upload to VYBZ</h2>
+            <p className="text-xs text-zinc-400 mb-4">Select a clip from your iPhone Photos.</p>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              {!file ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-zinc-700 hover:border-vybzGreen rounded-2xl p-6 text-center cursor-pointer bg-vybzBlack/60"
+                >
+                  <div className="text-3xl mb-1">📹</div>
+                  <div className="text-xs font-bold text-white">Tap to Choose Video</div>
+                  <div className="text-[10px] text-zinc-500 mt-1">Camera Roll or Record</div>
+                </div>
+              ) : (
+                <div className="bg-vybzBlack p-3 rounded-xl border border-vybzGreen flex items-center justify-between">
+                  <span className="text-xs text-zinc-300 truncate max-w-[200px]">{file.name}</span>
+                  <button type="button" onClick={() => setFile(null)} className="text-xs text-red-400">Remove</button>
+                </div>
+              )}
+
+              <div>
+                <label className="text-[11px] font-semibold text-zinc-400 mb-1 block">Caption & Hashtags</label>
+                <textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  placeholder="Share the vibes... #vybz"
+                  rows={3}
+                  className="w-full bg-vybzBlack border border-zinc-800 rounded-xl p-3 text-xs text-white outline-none focus:border-vybzGreen resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={!file}
+                className="w-full py-3 rounded-full bg-vybzGreen text-black font-extrabold text-xs uppercase tracking-wider disabled:opacity-40"
+              >
+                Publish Clip
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function SearchView() {
+      const trending = ["accravibes", "afrodance", "skate", "techafrica", "drill"];
+      return (
+        <div className="h-full w-full bg-vybzBlack p-4 pt-14 text-left overflow-y-auto no-scrollbar">
+          <input
+            type="text"
+            placeholder="Search creators, hashtags, or sounds"
+            className="w-full bg-vybzSurface border border-vybzBorder rounded-full px-4 py-2.5 text-xs text-white placeholder-zinc-500 outline-none focus:border-vybzGreen mb-5"
+          />
+          <h3 className="text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-3">Trending Tags</h3>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {trending.map(t => (
+              <span key={t} className="px-3 py-1 rounded-full bg-vybzSurface border border-vybzBorder text-xs text-zinc-300">
+                #{t}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ActivityView() {
+      const alerts = [
+        { id: 1, user: "kofi_skates", text: "liked your video", time: "12m ago" },
+        { id: 2, user: "zara_moves", text: "commented: 'Crazy footwork!'", time: "1h ago" }
+      ];
+      return (
+        <div className="h-full w-full bg-vybzBlack p-4 pt-14 text-left overflow-y-auto no-scrollbar">
+          <h2 className="text-base font-extrabold text-white mb-4">Activity</h2>
+          <div className="space-y-2">
+            {alerts.map(a => (
+              <div key={a.id} className="p-3 bg-vybzSurface border border-vybzBorder rounded-xl flex items-center justify-between text-xs">
+                <div>
+                  <span className="font-bold text-white">@{a.user} </span>
+                  <span className="text-zinc-400">{a.text}</span>
+                  <div className="text-[10px] text-zinc-500 mt-0.5">{a.time}</div>
+                </div>
+                <div className="text-vybzGreen font-bold">•</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ProfileView({ user }) {
+      return (
+        <div className="h-full w-full bg-vybzBlack pt-14 pb-20 text-center overflow-y-auto no-scrollbar">
+          <img
+            src={user.avatar}
+            alt="Profile"
+            className="w-20 h-20 rounded-full border-2 border-vybzGreen object-cover mx-auto mb-2 shadow-xl"
+          />
+          <h2 className="text-base font-extrabold text-white">@{user.username}</h2>
+          <p className="text-xs text-zinc-400 mt-1">{user.bio}</p>
+
+          <div className="flex items-center justify-center gap-8 my-5">
+            <div>
+              <div className="text-sm font-extrabold text-white">{user.following}</div>
+              <div className="text-[10px] text-zinc-500 uppercase font-semibold">Following</div>
+            </div>
+            <div>
+              <div className="text-sm font-extrabold text-white">{user.followers}</div>
+              <div className="text-[10px] text-zinc-500 uppercase font-semibold">Followers</div>
+            </div>
+            <div>
+              <div className="text-sm font-extrabold text-white">{user.likes}</div>
+              <div className="text-[10px] text-zinc-500 uppercase font-semibold">Likes</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function BottomBar({ activeTab, onTabChange, onOpenUpload }) {
+      return (
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-vybzBlack/95 backdrop-blur-lg border-t border-vybzBorder flex items-center justify-around py-3">
+          <button onClick={() => onTabChange('feed')} className={`text-center ${activeTab === 'feed' ? 'text-vybzGreen' : 'text-zinc-500'}`}>
+            <div className="text-lg">🏠</div>
+            <div className="text-[9px] font-bold mt-0.5">Feed</div>
+          </button>
+          <button onClick={() => onTabChange('search')} className={`text-center ${activeTab === 'search' ? 'text-vybzGreen' : 'text-zinc-500'}`}>
+            <div className="text-lg">🔍</div>
+            <div className="text-[9px] font-bold mt-0.5">Explore</div>
+          </button>
+          <button onClick={onOpenUpload} className="w-11 h-7 rounded-lg bg-gradient-to-r from-zinc-800 via-vybzGreen to-zinc-800 p-[1.5px] flex items-center justify-center active:scale-95 transition">
+            <div className="w-full h-full bg-black rounded-[6px] flex items-center justify-center text-white font-black text-sm">
+              +
+            </div>
+          </button>
+          <button onClick={() => onTabChange('activity')} className={`text-center ${activeTab === 'activity' ? 'text-vybzGreen' : 'text-zinc-500'}`}>
+            <div className="text-lg">🔔</div>
+            <div className="text-[9px] font-bold mt-0.5">Activity</div>
+          </button>
+          <button onClick={() => onTabChange('profile')} className={`text-center ${activeTab === 'profile' ? 'text-vybzGreen' : 'text-zinc-500'}`}>
+            <div className="text-lg">👤</div>
+            <div className="text-[9px] font-bold mt-0.5">Profile</div>
+          </button>
+        </div>
+      );
+    }
+
+    function SplashScreen() {
+      return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-vybzBlack">
+          <div className="w-20 h-20 rounded-2xl bg-vybzGreen/10 border-2 border-vybzGreen flex items-center justify-center shadow-lg shadow-vybzGreen/20 mb-6">
+            <span className="text-4xl font-black text-vybzGreen">V</span>
+          </div>
+          <h1 className="text-3xl font-black tracking-widest text-white">
+            VYB<span className="text-vybzGreen">Z</span>
+          </h1>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mt-2 font-semibold">
+            Feel The Frequency
+          </p>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
